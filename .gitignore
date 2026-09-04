@@ -1,0 +1,36 @@
+# Entorno virtual
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Bases de datos y progreso local
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Variables y credenciales
+.env
+.env.*
+*.pem
+*.key
+*.crt
+credentials*
+secrets*
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Respaldos y registros
+*.backup
+*.bak
+*.respaldo*
+app.py.prueba-inicial
+*.log
