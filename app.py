@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import sqlite3
 import time
+from contextlib import closing
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
@@ -50,7 +51,7 @@ MANTENIMIENTOS = [
 
 def initialize_database():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(DB) as c:
+    with closing(sqlite3.connect(DB)) as c, c:
         version = c.execute("PRAGMA user_version").fetchone()[0]
         if version != 3:
             c.executescript("""
@@ -118,7 +119,7 @@ def lessons(): return jsonify(modules=[{'id':i+1,'name':n} for i,n in enumerate(
 
 @app.get('/api/schema')
 def schema():
-    with sqlite3.connect(DB) as c:
+    with closing(sqlite3.connect(DB)) as c:
         result={}
         for table in ('equipos','usuarios','departamentos','incidentes','mantenimientos'):
             result[table]=[{'name':x[1],'type':x[2]} for x in c.execute(f'PRAGMA table_info({table})')]

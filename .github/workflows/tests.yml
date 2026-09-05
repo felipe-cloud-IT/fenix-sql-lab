@@ -1,0 +1,32 @@
+name: Pruebas Fénix SQL Lab
+
+on:
+  push:
+    branches: [main, feature/150-exercises]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v7
+
+      - name: Configurar Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+
+      - name: Verificar sintaxis
+        run: python -m py_compile app.py catalog.py
+
+      - name: Ejecutar pruebas
+        run: python -m unittest discover -s tests -v
