@@ -88,6 +88,25 @@ def run_sql(sql):
         return cols, [[row[col] for col in cols] for row in rows[:MAX_ROWS]], len(rows)>MAX_ROWS
     finally: c.close()
 
+def friendly_sql_error(exc):
+    message = str(exc)
+    near = re.search(r'near "([^"]+)": syntax error', message, re.I)
+    if near:
+        token = near.group(1)
+        return f'Error de sintaxis cerca de "{token}". Revisa comas, palabras clave y el punto y coma final.'
+    missing_column = re.search(r'no such column: (.+)', message, re.I)
+    if missing_column:
+        return f'La columna "{missing_column.group(1)}" no existe. Revisa las columnas de la tabla seleccionada.'
+    missing_table = re.search(r'no such table: (.+)', message, re.I)
+    if missing_table:
+        return f'La tabla "{missing_table.group(1)}" no existe. Revisa las tablas disponibles.'
+    ambiguous = re.search(r'ambiguous column name: (.+)', message, re.I)
+    if ambiguous:
+        return f'La columna "{ambiguous.group(1)}" existe en más de una tabla. Indica su alias, por ejemplo e.nombre.'
+    if 'incomplete input' in message.lower():
+        return 'La consulta está incompleta. Revisa si falta una columna, tabla, condición o paréntesis.'
+    return f'La consulta no pudo ejecutarse: {message}'
+
 @app.get('/')
 def index(): return render_template('index.html')
 
@@ -112,7 +131,9 @@ def hint(lesson_id,level):
 
 @app.post('/api/query')
 def query():
-    p=request.get_json(silent=True) or {}; sql=str(p.get('sql','')); lesson_id=int(p.get('lesson_id',0) or 0)
+    p=request.get_json(silent=True) or {}; sql=str(p.get('sql',''))
+    try: lesson_id=int(p.get('lesson_id',0) or 0)
+    except (TypeError,ValueError): lesson_id=0
     if not 1<=lesson_id<=len(CATALOG): return jsonify(ok=False,error='Ejercicio inexistente'),400
     ok,error=safe(sql)
     if not ok:return jsonify(ok=False,error=error),400
@@ -126,7 +147,7 @@ def query():
         elif rows!=erows: message='Las columnas son correctas; revisa filtros, orden o agrupación.'
         else: message=f'¡Correcto! Ejercicio {lesson_id} completado.'
         return jsonify(ok=True,columns=cols,rows=rows,row_count=len(rows),truncated=truncated,evaluation={'passed':passed,'message':message})
-    except (sqlite3.Error,ValueError) as exc:return jsonify(ok=False,error=f'SQLite: {exc}'),400
+    except sqlite3.Error as exc:return jsonify(ok=False,error=friendly_sql_error(exc)),400
 
 initialize_database()
 if __name__=='__main__': app.run(host='127.0.0.1',port=5038,debug=False)
