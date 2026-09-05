@@ -1,150 +1,19 @@
-const editor = document.querySelector('#sqlEditor');
-const runButton = document.querySelector('#runButton');
-const hintButton = document.querySelector('#hintButton');
-const feedback = document.querySelector('#feedback');
-const resultTable = document.querySelector('#resultTable');
-const sourceTable = document.querySelector('#sourceTable');
-const schemaBox = document.querySelector('#schema');
-const emptyResult = document.querySelector('#emptyResult');
-const metrics = document.querySelector('#metrics');
-
-const lessons = {
-  1: {
-    title: 'Consultar equipos fuera de servicio',
-    description: 'Usaremos SELECT para elegir columnas, FROM para indicar la tabla y WHERE para filtrar filas.',
-    concepts: [['SELECT', 'Qué columnas mostrar'], ['FROM', 'En qué tabla buscar'], ['WHERE', 'Qué condición cumplir']],
-    challenge: 'Muestra solamente nombre y estado de los equipos cuyo estado sea Fuera de servicio.',
-    starter: "SELECT nombre, estado\nFROM equipos\nWHERE estado = 'Operativo';",
-    hint: 'Pista: selecciona nombre y estado desde equipos y aplica WHERE sobre estado con el texto exacto Fuera de servicio.'
-  },
-  2: {
-    title: 'Ordenar equipos por nombre',
-    description: 'ORDER BY organiza las filas devueltas. ASC ordena de A a Z y es el valor predeterminado; DESC invierte el orden.',
-    concepts: [['SELECT', 'Qué columnas mostrar'], ['FROM', 'En qué tabla buscar'], ['ORDER BY', 'Cómo ordenar las filas']],
-    challenge: 'Muestra nombre, tipo y estado de todos los equipos, ordenados alfabéticamente por nombre.',
-    starter: 'SELECT nombre, tipo, estado\nFROM equipos;',
-    hint: 'Pista: después de FROM equipos agrega ORDER BY nombre. Puedes escribir ASC de forma explícita.'
-  }
-};
-
-let currentLesson = localStorage.getItem('fenixSqlLesson1') === 'completed' ? 2 : 1;
-
-function renderTable(table, columns, rows) {
-  table.replaceChildren();
-  if (!columns.length) return;
-  const head = table.createTHead().insertRow();
-  columns.forEach(column => {
-    const th = document.createElement('th');
-    th.textContent = column;
-    head.appendChild(th);
-  });
-  const body = table.createTBody();
-  rows.forEach(row => {
-    const tr = body.insertRow();
-    columns.forEach((_, index) => {
-      const td = tr.insertCell();
-      td.textContent = row[index] ?? 'NULL';
-    });
-  });
-}
-
-function showFeedback(type, message) {
-  feedback.className = `feedback ${type}`;
-  feedback.textContent = message;
-}
-
-function updateProgress() {
-  const completed = [1, 2].filter(id => localStorage.getItem(`fenixSqlLesson${id}`) === 'completed').length;
-  const percent = completed * 10;
-  document.querySelector('#progressBar').style.width = `${percent}%`;
-  document.querySelector('#progressText').textContent = `${percent}%`;
-  document.querySelectorAll('.lesson[data-lesson]').forEach(button => {
-    const id = Number(button.dataset.lesson);
-    const status = button.querySelector('small');
-    status.textContent = localStorage.getItem(`fenixSqlLesson${id}`) === 'completed' ? 'Completada' : (id === currentLesson ? 'En curso' : 'Disponible');
-  });
-}
-
-function selectLesson(id) {
-  currentLesson = id;
-  const lesson = lessons[id];
-  document.querySelector('#lessonTag').textContent = `LECCIÓN ${id}`;
-  document.querySelector('#lessonTitle').textContent = lesson.title;
-  document.querySelector('#lessonDescription').textContent = lesson.description;
-  document.querySelector('#challengeText').textContent = lesson.challenge;
-  const grid = document.querySelector('#conceptGrid');
-  grid.replaceChildren();
-  lesson.concepts.forEach(([keyword, meaning]) => {
-    const item = document.createElement('div');
-    const code = document.createElement('code');
-    const span = document.createElement('span');
-    code.textContent = keyword;
-    span.textContent = meaning;
-    item.append(code, span);
-    grid.appendChild(item);
-  });
-  editor.value = lesson.starter;
-  feedback.className = 'feedback hidden';
-  resultTable.replaceChildren();
-  emptyResult.classList.remove('hidden');
-  metrics.textContent = 'Sin ejecutar';
-  document.querySelectorAll('.lesson[data-lesson]').forEach(button => button.classList.toggle('active', Number(button.dataset.lesson) === id));
-  updateProgress();
-}
-
-async function loadSchema() {
-  const response = await fetch('/api/schema');
-  const data = await response.json();
-  document.querySelector('#tableName').textContent = data.table;
-  schemaBox.replaceChildren();
-  data.columns.forEach(column => {
-    const chip = document.createElement('span');
-    const name = document.createElement('b');
-    name.textContent = column.name;
-    chip.append(name, ` · ${column.type}`);
-    schemaBox.appendChild(chip);
-  });
-  const columns = data.columns.map(column => column.name);
-  const rows = data.rows.map(row => columns.map(column => row[column]));
-  renderTable(sourceTable, columns, rows);
-}
-
-runButton.addEventListener('click', async () => {
-  runButton.disabled = true;
-  runButton.textContent = 'Ejecutando…';
-  try {
-    const response = await fetch('/api/query', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({sql: editor.value, lesson_id: currentLesson})
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) {
-      resultTable.replaceChildren();
-      emptyResult.classList.remove('hidden');
-      metrics.textContent = 'Consulta con error';
-      showFeedback('error', data.error || 'No fue posible ejecutar la consulta.');
-      return;
-    }
-    emptyResult.classList.add('hidden');
-    renderTable(resultTable, data.columns, data.rows);
-    metrics.textContent = `${data.row_count} fila(s) · ${data.elapsed_ms} ms${data.truncated ? ' · resultado limitado' : ''}`;
-    showFeedback(data.evaluation.passed ? 'ok' : 'hint', data.evaluation.message);
-    if (data.evaluation.passed) {
-      localStorage.setItem(`fenixSqlLesson${currentLesson}`, 'completed');
-      updateProgress();
-    }
-  } catch (error) {
-    showFeedback('error', 'No se pudo conectar con el laboratorio.');
-  } finally {
-    runButton.disabled = false;
-    runButton.textContent = 'Ejecutar consulta';
-  }
-});
-
-hintButton.addEventListener('click', () => showFeedback('hint', lessons[currentLesson].hint));
-document.querySelector('#refreshSchema').addEventListener('click', loadSchema);
-document.querySelectorAll('.lesson[data-lesson]').forEach(button => button.addEventListener('click', () => selectLesson(Number(button.dataset.lesson))));
-
-selectLesson(currentLesson);
-loadSchema();
+const $=s=>document.querySelector(s);let catalog=[],modules=[],current=1,hintLevel=0,schemas={};
+const completed=()=>new Set(JSON.parse(localStorage.getItem('fenixSqlCompleted')||'[]'));
+const attempts=()=>JSON.parse(localStorage.getItem('fenixSqlAttempts')||'{}');
+function saveAttempt(id,passed){const a=attempts();a[id]=(a[id]||0)+1;localStorage.setItem('fenixSqlAttempts',JSON.stringify(a));if(passed){const c=completed();c.add(id);localStorage.setItem('fenixSqlCompleted',JSON.stringify([...c]));}}
+function lesson(){return catalog.find(x=>x.id===current)}
+function updateProgress(){const c=completed(),pct=c.size/150*100;$('#progressText').textContent=`${c.size}/150`;$('#progressBar').style.width=`${pct}%`;document.querySelectorAll('.lesson-button').forEach(b=>{b.classList.toggle('done',c.has(Number(b.dataset.id)));b.classList.toggle('active',Number(b.dataset.id)===current)})}
+function renderLessonList(moduleId){const box=$('#lessonList');box.replaceChildren();catalog.filter(x=>x.module===moduleId).forEach(x=>{const b=document.createElement('button');b.className='lesson-button';b.dataset.id=x.id;b.innerHTML=`<b>${String(x.id).padStart(3,'0')}</b><span>${x.title}</span><i>✓</i>`;b.onclick=()=>selectLesson(x.id);box.appendChild(b)});updateProgress()}
+function selectLesson(id){current=Math.max(1,Math.min(150,id));const x=lesson();hintLevel=0;$('#moduleSelect').value=x.module;renderLessonList(x.module);$('#lessonTag').textContent=`MÓDULO ${x.module} · ${modules[x.module-1].name}`;$('#lessonTitle').textContent=x.title;$('#challenge').textContent=x.challenge;$('#counter').textContent=`Ejercicio ${x.id} de 150`;$('#sqlEditor').value=x.starter;$('#concepts').innerHTML=`<span>Objetivo</span><b>${modules[x.module-1].name}</b>`;$('#hintButton').textContent='Pista 1 de 3';$('#feedback').className='feedback hidden';$('#resultTable').replaceChildren();$('#emptyResult').classList.remove('hidden');$('#metrics').textContent='Sin ejecutar';$('#previous').disabled=id===1;$('#next').disabled=id===150;localStorage.setItem('fenixSqlCurrent',id);updateProgress()}
+function renderTable(cols,rows){const t=$('#resultTable');t.replaceChildren();if(!cols.length)return;const h=t.createTHead().insertRow();cols.forEach(c=>{const th=document.createElement('th');th.textContent=c;h.appendChild(th)});const body=t.createTBody();rows.forEach(r=>{const tr=body.insertRow();r.forEach(v=>{const td=tr.insertCell();td.textContent=v??'NULL'})})}
+function feedback(type,msg){const f=$('#feedback');f.className=`feedback ${type}`;f.textContent=msg}
+async function loadCatalog(){const r=await fetch('/api/lessons'),d=await r.json();catalog=d.lessons;modules=d.modules;modules.forEach(m=>$('#moduleSelect').add(new Option(`${m.id}. ${m.name}`,m.id)));selectLesson(Number(localStorage.getItem('fenixSqlCurrent'))||1)}
+async function loadSchema(){const r=await fetch('/api/schema'),d=await r.json();schemas=d.tables;const tabs=$('#tableTabs');tabs.replaceChildren();Object.keys(schemas).forEach((name,i)=>{const b=document.createElement('button');b.textContent=name;b.className=i===0?'active':'';b.onclick=()=>showSchema(name,b);tabs.appendChild(b)});showSchema(Object.keys(schemas)[0],tabs.firstChild)}
+function showSchema(name,button){document.querySelectorAll('.table-tabs button').forEach(b=>b.classList.remove('active'));button?.classList.add('active');const box=$('#schema');box.replaceChildren();schemas[name].forEach(c=>{const s=document.createElement('span');s.innerHTML=`<b>${c.name}</b> · ${c.type}`;box.appendChild(s)})}
+$('#runButton').onclick=async()=>{const b=$('#runButton');b.disabled=true;b.textContent='Ejecutando…';try{const r=await fetch('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lesson_id:current,sql:$('#sqlEditor').value})});const d=await r.json();if(!r.ok||!d.ok){feedback('error',d.error||'No fue posible ejecutar.');$('#metrics').textContent='Consulta con error';return}renderTable(d.columns,d.rows);$('#emptyResult').classList.add('hidden');$('#metrics').textContent=`${d.row_count} fila(s)${d.truncated?' · limitado':''}`;saveAttempt(current,d.evaluation.passed);feedback(d.evaluation.passed?'ok':'hint',d.evaluation.message);updateProgress()}catch(e){feedback('error','No se pudo conectar con el laboratorio.')}finally{b.disabled=false;b.textContent='Ejecutar consulta'}};
+$('#hintButton').onclick=async()=>{hintLevel=Math.min(3,hintLevel+1);const r=await fetch(`/api/hint/${current}/${hintLevel}`),d=await r.json();feedback('hint',d.hint);$('#hintButton').textContent=hintLevel<3?`Pista ${hintLevel+1} de 3`:'Pistas agotadas'};
+$('#moduleSelect').onchange=e=>selectLesson(catalog.find(x=>x.module===Number(e.target.value)).id);
+$('#previous').onclick=()=>selectLesson(current-1);$('#next').onclick=()=>selectLesson(current+1);$('#random').onclick=()=>selectLesson(1+Math.floor(Math.random()*150));$('#refreshSchema').onclick=loadSchema;
+$('#mode').onchange=e=>{if(e.target.value==='practice')$('#random').click();if(e.target.value==='reinforce'){const a=attempts(),c=completed();const pending=Object.keys(a).map(Number).filter(id=>!c.has(id));selectLesson(pending[0]||current)}};
+Promise.all([loadCatalog(),loadSchema()]).catch(()=>feedback('error','No fue posible iniciar el laboratorio.'));

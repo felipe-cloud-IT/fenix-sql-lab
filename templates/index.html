@@ -1,58 +1,15 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fénix SQL Lab</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fénix SQL Lab · 150</title><link rel="stylesheet" href="{{ url_for('static',filename='styles.css') }}"></head>
 <body>
-  <header class="topbar">
-    <div><span class="eyebrow">RUTA PROFESIONAL · SQL</span><h1>Fénix SQL Lab</h1></div>
-    <div class="status"><span></span> Laboratorio local</div>
-  </header>
-  <main class="layout">
-    <aside class="sidebar">
-      <p class="section-label">Fundamentos</p>
-      <button class="lesson" data-lesson="1"><b>01</b><span>SELECT y WHERE<small>Disponible</small></span></button>
-      <button class="lesson" data-lesson="2"><b>02</b><span>Ordenar resultados<small>Disponible</small></span></button>
-      <button class="lesson locked" disabled><b>03</b><span>Funciones agregadas<small>Bloqueado</small></span></button>
-      <div class="progress-box">
-        <div><span>Progreso</span><strong id="progressText">0%</strong></div>
-        <div class="progress"><div id="progressBar"></div></div>
-      </div>
-    </aside>
-    <section class="content">
-      <article class="lesson-card">
-        <span class="tag" id="lessonTag"></span>
-        <h2 id="lessonTitle"></h2>
-        <p id="lessonDescription"></p>
-        <div class="concept-grid" id="conceptGrid"></div>
-        <div class="challenge"><strong>Desafío</strong><p id="challengeText"></p></div>
-      </article>
-      <section class="workspace">
-        <div class="panel schema-panel">
-          <div class="panel-title"><span>Datos disponibles · Tabla: <code id="tableName">equipos</code></span><button id="refreshSchema">Actualizar</button></div>
-          <div id="schema" class="schema"></div>
-          <div class="table-wrap"><table id="sourceTable"></table></div>
-        </div>
-        <div class="panel editor-panel">
-          <div class="panel-title"><span>Editor SQL</span><span class="safe">Base de datos protegida</span></div>
-          <textarea id="sqlEditor" spellcheck="false" aria-label="Editor SQL"></textarea>
-          <div class="actions">
-            <button id="hintButton" class="secondary">Necesito una pista</button>
-            <button id="runButton" class="primary">Ejecutar consulta</button>
-          </div>
-          <div id="feedback" class="feedback hidden"></div>
-        </div>
-        <div class="panel result-panel">
-          <div class="panel-title"><span>Resultado</span><small id="metrics">Sin ejecutar</small></div>
-          <div id="emptyResult" class="empty">Ejecuta tu consulta para ver los resultados.</div>
-          <div class="table-wrap"><table id="resultTable"></table></div>
-        </div>
-      </section>
-    </section>
-  </main>
-  <script src="{{ url_for('static', filename='app.js') }}"></script>
-</body>
-</html>
+<header class="topbar"><div><span class="eyebrow">RUTA PROFESIONAL · SQL</span><h1>Fénix SQL Lab</h1></div><div class="top-actions"><select id="mode"><option value="route">Modo ruta</option><option value="practice">Práctica aleatoria</option><option value="reinforce">Reforzar errores</option></select><span class="status"><i></i> Desarrollo · 150</span></div></header>
+<main class="layout">
+ <aside class="sidebar"><label for="moduleSelect">Módulo</label><select id="moduleSelect"></select><div id="lessonList" class="lesson-list"></div><div class="progress-box"><div><span>Progreso total</span><strong id="progressText">0/150</strong></div><div class="progress"><div id="progressBar"></div></div></div></aside>
+ <section class="content">
+  <article class="lesson-card"><div class="lesson-head"><div><span class="tag" id="lessonTag"></span><h2 id="lessonTitle"></h2></div><span class="counter" id="counter"></span></div><p id="challenge"></p><div class="concepts" id="concepts"></div></article>
+  <section class="workspace">
+   <div class="panel schema-panel"><div class="panel-title"><span>Base de entrenamiento</span><button id="refreshSchema">Actualizar</button></div><div id="tableTabs" class="table-tabs"></div><div id="schema" class="schema"></div><p class="schema-help">Selecciona una tabla para revisar sus columnas.</p></div>
+   <div class="panel editor-panel"><div class="panel-title"><span>Editor SQL</span><span class="safe">Base protegida</span></div><textarea id="sqlEditor" spellcheck="false" aria-label="Editor SQL"></textarea><div class="actions"><button id="hintButton" class="secondary">Pista 1 de 3</button><button id="runButton" class="primary">Ejecutar consulta</button></div><div id="feedback" class="feedback hidden"></div></div>
+   <div class="panel result-panel"><div class="panel-title"><span>Resultado</span><small id="metrics">Sin ejecutar</small></div><div id="emptyResult" class="empty">Ejecuta tu consulta para revisar el resultado.</div><div class="table-wrap"><table id="resultTable"></table></div></div>
+  </section>
+  <nav class="lesson-nav"><button id="previous" class="secondary">← Anterior</button><button id="random" class="secondary">Ejercicio al azar</button><button id="next" class="primary">Siguiente →</button></nav>
+ </section>
+</main><script src="{{ url_for('static',filename='app.js') }}"></script></body></html>
