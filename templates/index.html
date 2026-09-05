@@ -8,60 +8,43 @@
 </head>
 <body>
   <header class="topbar">
-    <div>
-      <span class="eyebrow">RUTA PROFESIONAL · SQL</span>
-      <h1>Fénix SQL Lab</h1>
-    </div>
+    <div><span class="eyebrow">RUTA PROFESIONAL · SQL</span><h1>Fénix SQL Lab</h1></div>
     <div class="status"><span></span> Laboratorio local</div>
   </header>
-
   <main class="layout">
     <aside class="sidebar">
       <p class="section-label">Fundamentos</p>
-      <button class="lesson active"><b>01</b><span>SELECT y WHERE<small>En curso</small></span></button>
-      <button class="lesson locked" disabled><b>02</b><span>Ordenar resultados<small>Bloqueado</small></span></button>
+      <button class="lesson" data-lesson="1"><b>01</b><span>SELECT y WHERE<small>Disponible</small></span></button>
+      <button class="lesson" data-lesson="2"><b>02</b><span>Ordenar resultados<small>Disponible</small></span></button>
       <button class="lesson locked" disabled><b>03</b><span>Funciones agregadas<small>Bloqueado</small></span></button>
       <div class="progress-box">
         <div><span>Progreso</span><strong id="progressText">0%</strong></div>
         <div class="progress"><div id="progressBar"></div></div>
       </div>
     </aside>
-
     <section class="content">
       <article class="lesson-card">
-        <span class="tag">LECCIÓN 1</span>
-        <h2>Consultar equipos fuera de servicio</h2>
-        <p>Una consulta permite hacer una pregunta precisa a la base de datos. En esta lección utilizaremos <code>SELECT</code> para elegir columnas, <code>FROM</code> para indicar la tabla y <code>WHERE</code> para filtrar filas.</p>
-        <div class="concept-grid">
-          <div><code>SELECT</code><span>Qué columnas mostrar</span></div>
-          <div><code>FROM</code><span>En qué tabla buscar</span></div>
-          <div><code>WHERE</code><span>Qué condición cumplir</span></div>
-        </div>
-        <div class="challenge">
-          <strong>Desafío</strong>
-          <p>Muestra solamente las columnas <code>nombre</code> y <code>estado</code> de los equipos cuyo estado sea <code>Fuera de servicio</code>.</p>
-        </div>
+        <span class="tag" id="lessonTag"></span>
+        <h2 id="lessonTitle"></h2>
+        <p id="lessonDescription"></p>
+        <div class="concept-grid" id="conceptGrid"></div>
+        <div class="challenge"><strong>Desafío</strong><p id="challengeText"></p></div>
       </article>
-
       <section class="workspace">
         <div class="panel schema-panel">
-          <div class="panel-title"><span>Datos disponibles</span><button id="refreshSchema">Actualizar</button></div>
+          <div class="panel-title"><span>Datos disponibles · Tabla: <code id="tableName">equipos</code></span><button id="refreshSchema">Actualizar</button></div>
           <div id="schema" class="schema"></div>
           <div class="table-wrap"><table id="sourceTable"></table></div>
         </div>
-
         <div class="panel editor-panel">
-          <div class="panel-title"><span>Editor SQL</span><span class="safe">Solo lectura</span></div>
-          <textarea id="sqlEditor" spellcheck="false" aria-label="Editor SQL">SELECT nombre, estado
-FROM equipos
-WHERE estado = 'Operativo';</textarea>
+          <div class="panel-title"><span>Editor SQL</span><span class="safe">Base de datos protegida</span></div>
+          <textarea id="sqlEditor" spellcheck="false" aria-label="Editor SQL"></textarea>
           <div class="actions">
             <button id="hintButton" class="secondary">Necesito una pista</button>
             <button id="runButton" class="primary">Ejecutar consulta</button>
           </div>
           <div id="feedback" class="feedback hidden"></div>
         </div>
-
         <div class="panel result-panel">
           <div class="panel-title"><span>Resultado</span><small id="metrics">Sin ejecutar</small></div>
           <div id="emptyResult" class="empty">Ejecuta tu consulta para ver los resultados.</div>
@@ -70,7 +53,6 @@ WHERE estado = 'Operativo';</textarea>
       </section>
     </section>
   </main>
-
   <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

@@ -80,26 +80,31 @@ def normalized_rows(columns: list[str], rows: list[sqlite3.Row]) -> list[list[ob
     return [[row[column] for column in columns] for row in rows]
 
 
-def evaluate_lesson_1(columns: list[str], rows: list[sqlite3.Row]) -> dict:
-    expected_columns = ["nombre", "estado"]
-    expected_rows = [
-        ["NB-VTA-04", "Fuera de servicio"],
-    ]
+def evaluate_lesson(lesson_id: int, columns: list[str], rows: list[sqlite3.Row]) -> dict:
     actual_rows = normalized_rows(columns, rows)
+
+    if lesson_id == 2:
+        expected_columns = ["nombre", "tipo", "estado"]
+        expected_rows = [
+            ["NB-VTA-04", "Notebook", "Fuera de servicio"],
+            ["PC-RRHH-02", "Escritorio", "En mantenimiento"],
+            ["PC-SOP-01", "Notebook", "Operativo"],
+            ["SRV-ARCH-01", "Servidor", "Operativo"],
+            ["SW-CORE-01", "Switch", "Operativo"],
+        ]
+        if columns != expected_columns:
+            return {"passed": False, "message": "La consulta funciona, pero revisa las tres columnas solicitadas y su orden."}
+        if actual_rows == expected_rows:
+            return {"passed": True, "message": "¡Correcto! Mostraste las columnas solicitadas y ordenaste los equipos por nombre de A a Z."}
+        return {"passed": False, "message": "Las columnas son correctas. Ahora ordena las filas alfabéticamente por nombre usando ORDER BY."}
+
+    expected_columns = ["nombre", "estado"]
+    expected_rows = [["NB-VTA-04", "Fuera de servicio"]]
     if columns == expected_columns and actual_rows == expected_rows:
-        return {
-            "passed": True,
-            "message": "¡Correcto! Seleccionaste las columnas solicitadas y filtraste el equipo fuera de servicio.",
-        }
+        return {"passed": True, "message": "¡Correcto! Seleccionaste las columnas solicitadas y filtraste el equipo fuera de servicio."}
     if columns != expected_columns:
-        return {
-            "passed": False,
-            "message": "La consulta funciona, pero revisa cuáles son exactamente las dos columnas solicitadas.",
-        }
-    return {
-        "passed": False,
-        "message": "Las columnas son correctas. Ahora revisa el filtro aplicado sobre la columna estado.",
-    }
+        return {"passed": False, "message": "La consulta funciona, pero revisa cuáles son exactamente las dos columnas solicitadas."}
+    return {"passed": False, "message": "Las columnas son correctas. Ahora revisa el filtro aplicado sobre la columna estado."}
 
 
 @app.get("/")
@@ -109,7 +114,7 @@ def index():
 
 @app.get("/health")
 def health():
-    return jsonify(status="ok", service="fenix-sql-lab", version="0.1.0")
+    return jsonify(status="ok", service="fenix-sql-lab", version="0.2.0")
 
 
 @app.get("/api/schema")
@@ -129,6 +134,13 @@ def schema():
 def execute_query():
     payload = request.get_json(silent=True) or {}
     sql = str(payload.get("sql", ""))
+    try:
+        lesson_id = int(payload.get("lesson_id", 1))
+    except (TypeError, ValueError):
+        lesson_id = 1
+    if lesson_id not in {1, 2}:
+        return jsonify(ok=False, error="La lección seleccionada no existe."), 400
+
     safe, error = query_is_safe(sql)
     if not safe:
         return jsonify(ok=False, error=error), 400
@@ -144,7 +156,7 @@ def execute_query():
         rows = cursor.fetchmany(MAX_ROWS + 1)
         truncated = len(rows) > MAX_ROWS
         rows = rows[:MAX_ROWS]
-        evaluation = evaluate_lesson_1(columns, rows)
+        evaluation = evaluate_lesson(lesson_id, columns, rows)
         return jsonify(
             ok=True,
             columns=columns,
